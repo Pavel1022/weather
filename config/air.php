@@ -26,7 +26,9 @@ return [
         'archive_url' => env('SENSOR_COMMUNITY_ARCHIVE_URL', 'https://archive.sensor.community'),
         'timeout' => 30,
         'retries' => 3,
-        'retry_delay_ms' => 500,
-        'concurrency' => 10,
+        'retry_delay_ms' => 2000,
+        'concurrency' => 4,
+        'batch_pause_ms' => 250,
+        'day_pause_ms' => 2000,
     ],
 ];

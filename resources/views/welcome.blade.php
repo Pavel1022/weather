@@ -8,9 +8,13 @@
         <title>Clean Air Finder</title>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600">
+        <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" crossorigin="anonymous">
+        <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/flatpickr/confirmDate.css') }}">
         <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+        <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}" defer></script>
+        <script src="{{ asset('vendor/flatpickr/confirmDate.js') }}" defer></script>
         <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}" defer></script>
     </head>
     <body>
@@ -47,11 +51,11 @@
                 <form id="search-form" class="search__form" novalidate>
                     <div class="field">
                         <label for="from">From</label>
-                        <input type="date" id="from" name="from" required>
+                        <input type="text" id="from" name="from" placeholder="Select a date" autocomplete="off" required>
                     </div>
                     <div class="field">
                         <label for="to">To</label>
-                        <input type="date" id="to" name="to" required>
+                        <input type="text" id="to" name="to" placeholder="Select a date" autocomplete="off" required>
                     </div>
                     <button type="submit" class="button" id="submit">
                         <span class="button__spinner" aria-hidden="true"></span>
@@ -61,9 +65,9 @@
 
                 <div class="presets" role="group" aria-label="Quick periods">
                     <span class="presets__label">Quick pick:</span>
-                    <button type="button" class="chip" data-days="7">Last 7 days</button>
-                    <button type="button" class="chip" data-days="30">Last 30 days</button>
-                    <button type="button" class="chip" data-months="3">Last 3 months</button>
+                    <button type="button" class="chip" aria-pressed="false" data-days="7">Last 7 days</button>
+                    <button type="button" class="chip" aria-pressed="false" data-days="30">Last 30 days</button>
+                    <button type="button" class="chip" aria-pressed="false" data-months="3">Last 3 months</button>
                 </div>
 
                 <p class="hint" id="history-hint"></p>

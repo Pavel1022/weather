@@ -23,6 +23,7 @@ final class SensorCommunityArchiveClient implements SensorArchiveInterface
      * @param  int  $retries
      * @param  int  $retryDelayMs
      * @param  int  $concurrency
+     * @param  int  $batchPauseMs
      */
     public function __construct(
         private readonly string $baseUrl,
@@ -30,6 +31,7 @@ final class SensorCommunityArchiveClient implements SensorArchiveInterface
         private readonly int $retries,
         private readonly int $retryDelayMs,
         private readonly int $concurrency,
+        private readonly int $batchPauseMs = 0,
     ) {}
 
     /**
@@ -75,7 +77,11 @@ final class SensorCommunityArchiveClient implements SensorArchiveInterface
         $results = [];
         $path = $this->dayPath($date);
 
-        foreach (array_chunk($fileNames, max(1, $this->concurrency)) as $chunk) {
+        foreach (array_chunk($fileNames, max(1, $this->concurrency)) as $index => $chunk) {
+            if ($index > 0 && $this->batchPauseMs > 0) {
+                usleep($this->batchPauseMs * 1000);
+            }
+
             $responses = Http::pool(fn (Pool $pool): array => array_map(
                 fn (string $name) => $pool->as($name)
                     ->baseUrl($this->baseUrl)
