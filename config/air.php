@@ -4,6 +4,7 @@ return [
     'history_days' => 92,
     'radius_km' => 10.0,
     'min_readings_per_day' => 100,
+    'ranking_cache_seconds' => 3600,
     'min_valid_pm25' => 0.0,
     'max_valid_pm25' => 500.0,
 
