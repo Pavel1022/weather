@@ -34,7 +34,7 @@ class ImportAirQualityCommand extends Command
             return self::FAILURE;
         }
 
-        $days = iterator_to_array(CarbonPeriodImmutable::create($period->from, $period->to), false);
+        $days = array_reverse(iterator_to_array(CarbonPeriodImmutable::create($period->from, $period->to), false));
         $force = (bool) $this->option('force');
         $imported = 0;
         $skipped = 0;
