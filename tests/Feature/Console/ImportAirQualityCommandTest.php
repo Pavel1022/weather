@@ -48,6 +48,28 @@ final class ImportAirQualityCommandTest extends TestCase
     /**
      * @return void
      */
+    public function test_the_newest_days_are_imported_first(): void
+    {
+        Http::fake([
+            'archive.sensor.community/*/' => fn ($request) => Http::response($this->listing($this->dayFromUrl($request->url()))),
+            'archive.sensor.community/*.csv' => fn ($request) => Http::response($this->csv($this->dayFromUrl($request->url()))),
+        ]);
+
+        $this->artisan('air:import', ['--from' => '2026-10-01', '--to' => '2026-10-03'])->assertSuccessful();
+
+        $listedDays = collect(Http::recorded())
+            ->map(fn (array $pair): string => $pair[0]->url())
+            ->filter(fn (string $url): bool => str_ends_with($url, '/'))
+            ->map(fn (string $url): string => $this->dayFromUrl($url))
+            ->values()
+            ->all();
+
+        $this->assertSame(['2026-10-03', '2026-10-02', '2026-10-01'], $listedDays);
+    }
+
+    /**
+     * @return void
+     */
     public function test_days_that_are_not_in_the_archive_make_the_command_fail(): void
     {
         Http::fake(['archive.sensor.community/*' => Http::response('Not Found', 404)]);
