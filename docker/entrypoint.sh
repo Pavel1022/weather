@@ -5,6 +5,17 @@ cd /app
 
 [ -f .env ] || cp .env.example .env
 
+for name in APP_ENV APP_DEBUG APP_URL DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD; do
+    value="$(printenv "$name" || true)"
+    [ -n "$value" ] || continue
+
+    if grep -q "^${name}=" .env; then
+        sed -i "s|^${name}=.*|${name}=${value}|" .env
+    else
+        printf '%s=%s\n' "$name" "$value" >> .env
+    fi
+done
+
 grep -q '^APP_KEY=base64' .env || php artisan key:generate --force
 
 php artisan migrate --force
