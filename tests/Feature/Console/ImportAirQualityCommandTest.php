@@ -22,7 +22,7 @@ final class ImportAirQualityCommandTest extends TestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        config(['air.sensor_community.retries' => 1]);
+        config(['air.sensor_community.retries' => 1, 'air.sensor_community.batch_pause_ms' => 0, 'air.sensor_community.day_pause_ms' => 0]);
 
         Sensor::query()->create(['id' => 28910, 'type' => 'SDS011', 'city' => 'Sofia', 'latitude' => 42.642, 'longitude' => 23.31, 'distance_km' => 6.27]);
     }

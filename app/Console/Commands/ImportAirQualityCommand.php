@@ -41,13 +41,22 @@ class ImportAirQualityCommand extends Command
         $failed = [];
         $readings = 0;
         $sensorDays = 0;
+        $pauseMs = (int) config('air.sensor_community.day_pause_ms', 0);
+        $downloaded = false;
 
         $this->info("Importing {$period->from->toDateString()} to {$period->to->toDateString()} (".count($days).' days)');
 
-        $this->withProgressBar($days, function (CarbonImmutable $day) use ($importer, $force, &$imported, &$skipped, &$failed, &$readings, &$sensorDays): void {
+        $this->withProgressBar($days, function (CarbonImmutable $day) use ($importer, $force, $pauseMs, &$downloaded, &$imported, &$skipped, &$failed, &$readings, &$sensorDays): void {
+            if ($downloaded && $pauseMs > 0) {
+                usleep($pauseMs * 1000);
+            }
+
+            $downloaded = false;
+
             try {
                 $result = $importer->import($day, $force);
             } catch (SensorCommunityException $exception) {
+                $downloaded = true;
                 $failed[$day->toDateString()] = $exception->getMessage();
 
                 return;
@@ -59,6 +68,7 @@ class ImportAirQualityCommand extends Command
                 return;
             }
 
+            $downloaded = true;
             $imported++;
             $readings += $result->readings;
             $sensorDays += $result->sensorDays;

@@ -63,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when($clients)->needs('$retries')->giveConfig('air.sensor_community.retries');
         $this->app->when($clients)->needs('$retryDelayMs')->giveConfig('air.sensor_community.retry_delay_ms');
         $this->app->when(SensorCommunityArchiveClient::class)->needs('$concurrency')->giveConfig('air.sensor_community.concurrency');
+        $this->app->when(SensorCommunityArchiveClient::class)->needs('$batchPauseMs')->giveConfig('air.sensor_community.batch_pause_ms');
     }
 
     /**

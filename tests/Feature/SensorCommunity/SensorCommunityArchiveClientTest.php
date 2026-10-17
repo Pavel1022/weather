@@ -29,7 +29,7 @@ final class SensorCommunityArchiveClientTest extends TestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        config(['air.sensor_community.retries' => 1]);
+        config(['air.sensor_community.retries' => 1, 'air.sensor_community.batch_pause_ms' => 0, 'air.sensor_community.day_pause_ms' => 0]);
 
         $this->archive = $this->app->make(SensorArchiveInterface::class);
         $this->day = CarbonImmutable::parse('2026-10-15');
