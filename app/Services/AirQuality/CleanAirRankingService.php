@@ -10,8 +10,9 @@ use App\Services\AirQuality\Calculation\CityAverageCalculator;
 use App\Services\AirQuality\Calculation\CityRanker;
 use App\Services\AirQuality\Calculation\CitySummaryCalculator;
 use App\Services\AirQuality\Calculation\OutlierFilter;
+use App\Services\AirQuality\Contracts\CleanAirRankingInterface;
 
-final class CleanAirRankingService
+final class CleanAirRankingService implements CleanAirRankingInterface
 {
     /**
      * @param  DailyAverageRepositoryInterface  $averages

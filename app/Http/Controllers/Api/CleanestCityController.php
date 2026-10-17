@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CleanestCityRequest;
 use App\Http\Resources\RankingResource;
-use App\Services\AirQuality\CleanAirRankingService;
+use App\Services\AirQuality\Contracts\CleanAirRankingInterface;
 use Illuminate\Support\Facades\Log;
 
 final class CleanestCityController extends Controller
 {
     /**
      * @param  CleanestCityRequest  $request
-     * @param  CleanAirRankingService  $ranking
+     * @param  CleanAirRankingInterface  $ranking
      * @return RankingResource
      */
-    public function __invoke(CleanestCityRequest $request, CleanAirRankingService $ranking): RankingResource
+    public function __invoke(CleanestCityRequest $request, CleanAirRankingInterface $ranking): RankingResource
     {
         $startedAt = microtime(true);
         $result = $ranking->rank($request->period());

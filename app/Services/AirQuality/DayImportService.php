@@ -4,6 +4,7 @@ namespace App\Services\AirQuality;
 
 use App\Data\ArchiveFile;
 use App\Data\ImportResult;
+use App\Events\DayImported;
 use App\Repositories\Contracts\DailyAverageRepositoryInterface;
 use App\Repositories\Contracts\ImportRunRepositoryInterface;
 use App\Repositories\Contracts\SensorRepositoryInterface;
@@ -89,6 +90,7 @@ final class DayImportService
 
             $result = new ImportResult($date, count($files), $failed, $readings, $rejected, count($dayAverages), false);
             $this->runs->markCompleted($result);
+            DayImported::dispatch($result);
 
             Log::channel('import')->info('Import finished', [
                 'date' => $date->toDateString(),

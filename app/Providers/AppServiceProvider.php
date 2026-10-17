@@ -8,11 +8,14 @@ use App\Repositories\Contracts\SensorRepositoryInterface;
 use App\Repositories\Eloquent\EloquentDailyAverageRepository;
 use App\Repositories\Eloquent\EloquentImportRunRepository;
 use App\Repositories\Eloquent\EloquentSensorRepository;
+use App\Services\AirQuality\CachedCleanAirRankingService;
 use App\Services\AirQuality\Calculation\CityResolver;
 use App\Services\AirQuality\Calculation\OutlierFilter;
 use App\Services\AirQuality\Calculation\PmReadingFilter;
 use App\Services\AirQuality\Calculation\SensorDayAverager;
 use App\Services\AirQuality\CityCatalog;
+use App\Services\AirQuality\CleanAirRankingService;
+use App\Services\AirQuality\Contracts\CleanAirRankingInterface;
 use App\Services\AirQuality\SensorDiscoveryService;
 use App\Services\Api\SensorCommunity\Contracts\SensorArchiveInterface;
 use App\Services\Api\SensorCommunity\Contracts\SensorDirectoryInterface;
@@ -79,5 +82,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(OutlierFilter::class)->needs('$maxRatioToMedian')->giveConfig('air.outliers.max_ratio_to_median');
         $this->app->when(OutlierFilter::class)->needs('$minDifference')->giveConfig('air.outliers.min_difference');
         $this->app->when(OutlierFilter::class)->needs('$minSensors')->giveConfig('air.outliers.min_sensors');
+
+        $this->app->bind(CleanAirRankingInterface::class, CachedCleanAirRankingService::class);
+        $this->app->when(CachedCleanAirRankingService::class)->needs(CleanAirRankingInterface::class)->give(CleanAirRankingService::class);
+        $this->app->when(CachedCleanAirRankingService::class)->needs('$ttlSeconds')->giveConfig('air.ranking_cache_seconds');
     }
 }
