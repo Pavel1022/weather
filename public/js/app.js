@@ -31,6 +31,7 @@
     const placeholderRanking = [...rankingList.children].map((li) => li.cloneNode(true));
 
     let history = null;
+    const pickers = { from: null, to: null };
 
     function toIsoDate(date) {
         const pad = (n) => String(n).padStart(2, '0');
@@ -60,14 +61,94 @@
         return history ? parseIsoDate(history.to) : yesterday();
     }
 
+    function setDate(name, value) {
+        const picker = pickers[name];
+        if (picker) {
+            picker.setDate(value, false);
+        } else {
+            (name === 'from' ? fromInput : toInput).value = value;
+        }
+    }
+
     function setPeriod(from, to) {
         let start = from;
+        let clamped = false;
         if (history && toIsoDate(start) < history.from) {
             start = parseIsoDate(history.from);
+            clamped = true;
         }
-        fromInput.value = toIsoDate(start);
-        toInput.value = toIsoDate(to);
+        setDate('from', toIsoDate(start));
+        applyLimits();
+        setDate('to', toIsoDate(to));
         clearErrors();
+        return clamped;
+    }
+
+    function visibleInput(name) {
+        const picker = pickers[name];
+        return picker?.altInput ?? (name === 'from' ? fromInput : toInput);
+    }
+
+    function onPickerChange() {
+        applyLimits();
+        clearErrors();
+        setActiveChip(null);
+        showHistoryHint(false);
+    }
+
+    function createPicker(input) {
+        if (!window.flatpickr) {
+            return null;
+        }
+
+        const plugins = window.confirmDatePlugin
+            ? [new window.confirmDatePlugin({ confirmText: 'OK', showAlways: true, theme: 'light' })]
+            : [];
+
+        const picker = window.flatpickr(input, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altInputClass: 'date-input',
+            altFormat: 'j M Y',
+            disableMobile: true,
+            closeOnSelect: false,
+            monthSelectorType: 'static',
+            locale: { firstDayOfWeek: 1 },
+            plugins,
+            onChange: onPickerChange,
+        });
+
+        picker.altInput.id = `${input.id}-display`;
+        document.querySelector(`label[for="${input.id}"]`)?.setAttribute('for', picker.altInput.id);
+
+        return picker;
+    }
+
+    function applyLimits() {
+        const min = history?.from ?? null;
+        const max = history?.to ?? toIsoDate(new Date());
+
+        if (pickers.from) {
+            pickers.from.set('minDate', min);
+            pickers.from.set('maxDate', max);
+        }
+
+        if (pickers.to) {
+            pickers.to.set('minDate', fromInput.value || min);
+            pickers.to.set('maxDate', max);
+        }
+    }
+
+    function setActiveChip(active) {
+        document.querySelectorAll('.chip[data-days], .chip[data-months]').forEach((chip) => {
+            chip.setAttribute('aria-pressed', String(chip === active));
+        });
+    }
+
+    function showHistoryHint(clamped) {
+        if (!history) return;
+        const base = `Stored history: ${formatDate(history.from)} – ${formatDate(history.to)}.`;
+        historyHint.textContent = clamped ? `${base} The period was shortened to the stored data.` : base;
     }
 
     function bandFor(value) {
@@ -86,8 +167,8 @@
     function clearErrors() {
         formError.hidden = true;
         formError.replaceChildren();
-        fromInput.removeAttribute('aria-invalid');
-        toInput.removeAttribute('aria-invalid');
+        visibleInput('from').removeAttribute('aria-invalid');
+        visibleInput('to').removeAttribute('aria-invalid');
     }
 
     function showErrors(messages, fields = []) {
@@ -108,8 +189,9 @@
         }
 
         for (const field of fields) {
-            const input = field === 'from' ? fromInput : field === 'to' ? toInput : null;
-            input?.setAttribute('aria-invalid', 'true');
+            if (field === 'from' || field === 'to') {
+                visibleInput(field).setAttribute('aria-invalid', 'true');
+            }
         }
 
         formError.hidden = false;
@@ -217,9 +299,7 @@
             if (!response.ok || !body?.from || !body?.to) return;
 
             history = { from: body.from, to: body.to };
-            fromInput.min = toInput.min = history.from;
-            fromInput.max = toInput.max = history.to;
-            historyHint.textContent = `Stored history: ${formatDate(history.from)} – ${formatDate(history.to)}.`;
+            showHistoryHint(false);
         } catch {}
     }
 
@@ -236,7 +316,14 @@
         }
     }
 
-    function renderResults(data, from, to) {
+    function revealResults() {
+        const top = winnerCard.getBoundingClientRect().top;
+        if (top < 0 || top > window.innerHeight * 0.75) {
+            winnerCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function renderResults(data, from, to, reveal) {
         const ranking = (data.ranking ?? data.cities ?? []).map((item) => ({
             ...item,
             pm25: pm25Of(item),
@@ -271,7 +358,9 @@
         updateMap(withData, winner);
 
         winnerCard.hidden = false;
-        winnerCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (reveal) {
+            revealResults();
+        }
     }
 
     function rankingItem(item, rank, max) {
@@ -353,7 +442,7 @@
                 return;
             }
 
-            renderResults(body, from, to);
+            renderResults(body, from, to, event.submitter === submitButton);
         } catch {
             showErrors(['Could not reach the server. Check your connection and try again.']);
         } finally {
@@ -371,14 +460,25 @@
                 start.setMonth(start.getMonth() - Number(chip.dataset.months));
                 start.setDate(start.getDate() + 1);
             }
-            setPeriod(start, end);
+            showHistoryHint(setPeriod(start, end));
+            setActiveChip(chip);
+            form.requestSubmit();
         });
     });
 
-    [fromInput, toInput].forEach((input) => input.addEventListener('input', clearErrors));
+    [fromInput, toInput].forEach((input) =>
+        input.addEventListener('input', () => {
+            clearErrors();
+            setActiveChip(null);
+            showHistoryHint(false);
+        })
+    );
 
     (async () => {
+        pickers.from = createPicker(fromInput);
+        pickers.to = createPicker(toInput);
         await loadHistory();
+        applyLimits();
         const end = latestDate();
         const start = new Date(end);
         start.setDate(start.getDate() - 29);
