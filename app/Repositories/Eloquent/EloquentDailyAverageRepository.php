@@ -2,11 +2,11 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Data\CitySummary;
 use App\Data\DateRange;
 use App\Data\SensorDayAverage;
 use App\Models\SensorDailyAverage;
 use App\Repositories\Contracts\DailyAverageRepositoryInterface;
+use Carbon\CarbonImmutable;
 
 final class EloquentDailyAverageRepository implements DailyAverageRepositoryInterface
 {
@@ -45,30 +45,36 @@ final class EloquentDailyAverageRepository implements DailyAverageRepositoryInte
 
     /**
      * @param  DateRange  $range
-     * @return array<string, CitySummary>
+     * @return list<SensorDayAverage>
      */
-    public function summariesBetween(DateRange $range): array
+    public function sensorDaysBetween(DateRange $range): array
     {
         $rows = SensorDailyAverage::query()
             ->toBase()
-            ->selectRaw('city, SUM(pm25_avg) AS sum_of_averages, COUNT(*) AS sensor_days, COUNT(DISTINCT sensor_id) AS sensors, SUM(pm25_count) AS measurements')
+            ->select(['sensor_id', 'city', 'date', 'pm25_sum', 'pm25_count', 'pm25_avg'])
             ->whereBetween('date', [$range->from->toDateString(), $range->to->toDateString()])
-            ->groupBy('city')
+            ->orderBy('date')
+            ->orderBy('sensor_id')
             ->get();
 
-        $summaries = [];
+        $dates = [];
+        $averages = [];
 
         foreach ($rows as $row) {
-            $summaries[$row->city] = new CitySummary(
+            $day = substr((string) $row->date, 0, 10);
+            $dates[$day] ??= CarbonImmutable::createFromFormat('!Y-m-d', $day);
+
+            $averages[] = new SensorDayAverage(
+                (int) $row->sensor_id,
                 $row->city,
-                (float) $row->sum_of_averages,
-                (int) $row->sensor_days,
-                (int) $row->sensors,
-                (int) $row->measurements,
+                $dates[$day],
+                (float) $row->pm25_sum,
+                (int) $row->pm25_count,
+                (float) $row->pm25_avg,
             );
         }
 
-        return $summaries;
+        return $averages;
     }
 
     /**

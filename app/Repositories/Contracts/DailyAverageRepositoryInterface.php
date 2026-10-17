@@ -2,7 +2,6 @@
 
 namespace App\Repositories\Contracts;
 
-use App\Data\CitySummary;
 use App\Data\DateRange;
 use App\Data\SensorDayAverage;
 
@@ -16,9 +15,9 @@ interface DailyAverageRepositoryInterface
 
     /**
      * @param  DateRange  $range
-     * @return array<string, CitySummary>
+     * @return list<SensorDayAverage>
      */
-    public function summariesBetween(DateRange $range): array;
+    public function sensorDaysBetween(DateRange $range): array;
 
     /**
      * @return DateRange|null
