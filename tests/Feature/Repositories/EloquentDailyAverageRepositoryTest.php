@@ -78,7 +78,7 @@ final class EloquentDailyAverageRepositoryTest extends TestCase
     /**
      * @return void
      */
-    public function test_summaries_only_include_days_inside_the_range(): void
+    public function test_sensor_days_only_include_days_inside_the_range(): void
     {
         $this->repository->saveMany([
             $this->average(1, 'Sofia', '2026-09-30', 99.0),
@@ -87,42 +87,42 @@ final class EloquentDailyAverageRepositoryTest extends TestCase
             $this->average(1, 'Sofia', '2026-10-03', 99.0),
         ]);
 
-        $summary = $this->repository->summariesBetween(DateRange::fromStrings('2026-10-01', '2026-10-02'))['Sofia'];
+        $days = $this->repository->sensorDaysBetween(DateRange::fromStrings('2026-10-01', '2026-10-02'));
 
-        $this->assertSame(40.0, $summary->sumOfDailyAverages);
-        $this->assertSame(2, $summary->sensorDays);
-        $this->assertSame(200, $summary->measurements);
+        $this->assertSame(
+            ['2026-10-01', '2026-10-02'],
+            array_map(fn (SensorDayAverage $average): string => $average->date->toDateString(), $days),
+        );
+        $this->assertSame([10.0, 30.0], array_map(fn (SensorDayAverage $average): float => $average->average, $days));
     }
 
     /**
      * @return void
      */
-    public function test_summaries_are_grouped_by_city_and_count_distinct_sensors(): void
+    public function test_sensor_days_keep_all_stored_values(): void
     {
         $this->repository->saveMany([
-            $this->average(1, 'Sofia', '2026-10-01', 10.0),
-            $this->average(1, 'Sofia', '2026-10-02', 20.0),
-            $this->average(2, 'Sofia', '2026-10-01', 30.0),
-            $this->average(3, 'Varna', '2026-10-01', 8.0),
+            new SensorDayAverage(3, 'Varna', CarbonImmutable::parse('2026-10-01'), 960.0, 120, 8.0),
         ]);
 
-        $summaries = $this->repository->summariesBetween(DateRange::fromStrings('2026-10-01', '2026-10-02'));
+        $day = $this->repository->sensorDaysBetween(DateRange::fromStrings('2026-10-01', '2026-10-01'))[0];
 
-        $this->assertEqualsCanonicalizing(['Sofia', 'Varna'], array_keys($summaries));
-        $this->assertSame(3, $summaries['Sofia']->sensorDays);
-        $this->assertSame(2, $summaries['Sofia']->sensors);
-        $this->assertSame(60.0, $summaries['Sofia']->sumOfDailyAverages);
-        $this->assertSame(1, $summaries['Varna']->sensors);
+        $this->assertSame(3, $day->sensorId);
+        $this->assertSame('Varna', $day->city);
+        $this->assertSame('2026-10-01 00:00:00', $day->date->toDateTimeString());
+        $this->assertSame(960.0, $day->sum);
+        $this->assertSame(120, $day->count);
+        $this->assertSame(8.0, $day->average);
     }
 
     /**
      * @return void
      */
-    public function test_summaries_are_empty_when_there_is_no_data_in_the_range(): void
+    public function test_sensor_days_are_empty_when_there_is_no_data_in_the_range(): void
     {
         $this->repository->saveMany([$this->average(1, 'Sofia', '2026-10-01', 10.0)]);
 
-        $this->assertSame([], $this->repository->summariesBetween(DateRange::fromStrings('2026-11-01', '2026-11-30')));
+        $this->assertSame([], $this->repository->sensorDaysBetween(DateRange::fromStrings('2026-11-01', '2026-11-30')));
     }
 
     /**
