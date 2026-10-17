@@ -14,7 +14,7 @@ docker compose up --build
 
 Open <http://localhost:8000>.
 
-On the first start the container runs the migrations, discovers the sensors around each city and imports the **last 92 days** in the background. The site is available right away and fills up as days are imported (about 20–30 seconds per day). For a quick try, import fewer days:
+On the first start the container runs the migrations, discovers the sensors around each city and imports the **last 92 days** in the background, newest day first. The site is available right away and the history grows backwards as days are imported (about 20–30 seconds per day). For a quick try, import fewer days:
 
 ```bash
 HISTORY_DAYS=3 docker compose up --build
